@@ -1,0 +1,21 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Public studio content (hero photos, stories)
+    match /studio_content/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    // Secure admin configuration - protected from public inspection
+    match /admin_config/{docId} {
+      allow read, write: if false;
+    }
+    
+    // Default safe fallback
+    match /{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

@@ -1,0 +1,13 @@
+# Shrey Studio robots.txt
+# https://shreystudio.com/
+
+User-agent: *
+Allow: /
+Disallow: /#admin
+Disallow: /admin
+
+# Host
+Host: https://shreystudio.com
+
+# Sitemaps
+Sitemap: https://shreystudio.com/sitemap.xml
