@@ -25,133 +25,107 @@ export const ArchitectFounderSection: React.FC = () => {
       {/* Soft Ambient Gold Glow */}
       <div className="absolute top-1/3 left-10 w-96 h-96 bg-radial from-amber-100/40 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-      <div className="max-w-6xl mx-auto px-6 sm:px-10 lg:px-12 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+      <div className="max-w-5xl mx-auto px-6 sm:px-10 lg:px-12 relative z-10">
+        <div className="flex flex-col items-center text-center">
           
-          {/* Left Column: Founder Manifesto & Narrative */}
-          <div className="lg:col-span-6 flex flex-col justify-center">
-            
-            {/* Eyebrow: The Architect of Moments with Animated Bullet */}
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6 }}
-              className="flex items-center gap-2.5 mb-3"
-            >
-              <span className="w-2 h-2 rounded-full bg-amber-600 animate-pulse" />
-              <span className="font-['Plus_Jakarta_Sans'] text-xs font-bold tracking-[0.25em] text-amber-800 uppercase">
-                {FOUNDER_DATA.eyebrow}
-              </span>
-            </motion.div>
+          {/* Eyebrow: The Architect of Moments with Animated Bullet */}
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.6 }}
+            className="flex items-center justify-center gap-2.5 mb-3"
+          >
+            <span className="w-2 h-2 rounded-full bg-amber-600 animate-pulse" />
+            <span className="font-['Plus_Jakarta_Sans'] text-xs font-bold tracking-[0.25em] text-amber-800 uppercase">
+              {FOUNDER_DATA.eyebrow}
+            </span>
+          </motion.div>
 
-            {/* Founder Name: Word-by-Word Animated Reveal */}
-            <div className="mb-1">
-              <AnimatedHeadline
-                as="h2"
-                align="left"
-                className="font-['Cormorant_Garamond'] text-4xl sm:text-5xl lg:text-6xl font-light text-slate-950 capitalize tracking-tight"
-                words={[
-                  { text: 'Shreyash', subHint: 'Director & Visionary' },
-                  { text: 'Gore', isItalic: true, hasUnderline: true, subHint: 'Master Light Craftsman' },
-                ]}
-              />
-            </div>
-
-            <motion.p 
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="font-['Plus_Jakarta_Sans'] text-xs sm:text-[13px] font-bold tracking-[0.2em] text-slate-500 uppercase mb-5"
-            >
-              {FOUNDER_DATA.title}
-            </motion.p>
-
-            {/* Elegant Divider */}
-            <motion.div 
-              initial={{ scaleX: 0, originX: 0 }}
-              whileInView={{ scaleX: 1 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="w-16 h-[2px] bg-amber-600 mb-8" 
+          {/* Founder Name: Word-by-Word Animated Reveal */}
+          <div className="mb-2">
+            <AnimatedHeadline
+              as="h2"
+              align="center"
+              className="font-['Cormorant_Garamond'] text-4xl sm:text-5xl lg:text-6xl font-light text-slate-950 capitalize tracking-tight"
+              words={[
+                { text: 'Shreyash', subHint: 'Director & Visionary' },
+                { text: 'Gore', isItalic: true, hasUnderline: true, subHint: 'Master Light Craftsman' },
+              ]}
             />
-
-            {/* Core Quote */}
-            <motion.blockquote 
-              initial={{ opacity: 0, y: 15 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6, delay: 0.35 }}
-              className="font-['Cormorant_Garamond'] text-lg sm:text-xl md:text-2xl italic font-normal text-slate-800 leading-relaxed mb-6 pl-4 border-l-2 border-amber-600/60"
-            >
-              {FOUNDER_DATA.quote}
-            </motion.blockquote>
-
-            {/* Editorial Philosophy Paragraph */}
-            <motion.p 
-              initial={{ opacity: 0, y: 15 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="font-['Plus_Jakarta_Sans'] text-sm sm:text-base text-slate-600 leading-relaxed mb-8 font-normal"
-            >
-              {FOUNDER_DATA.body}
-            </motion.p>
-
-            {/* Core Pillars List */}
-            <div className="space-y-4 pt-6 border-t border-slate-200">
-              {CORE_PILLARS.map((pillar, idx) => (
-                <motion.div
-                  key={pillar.id}
-                  initial={{ opacity: 0, y: 15 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.3 }}
-                  transition={{ duration: 0.5, delay: 0.15 * idx }}
-                  onMouseEnter={() => setHoveredPillar(pillar.id)}
-                  onMouseLeave={() => setHoveredPillar(null)}
-                  className={`flex items-start gap-4 p-3 rounded-2xl transition-all duration-300 ${
-                    hoveredPillar === pillar.id ? 'bg-white shadow-md -translate-y-0.5' : 'bg-transparent'
-                  }`}
-                >
-                  <div className={`w-10 h-10 rounded-full border flex items-center justify-center shrink-0 shadow-xs transition-colors ${
-                    hoveredPillar === pillar.id ? 'bg-amber-100 border-amber-400' : 'bg-white border-slate-200'
-                  }`}>
-                    {getIcon(pillar.icon)}
-                  </div>
-                  <div>
-                    <h4 className="font-['Cormorant_Garamond'] text-xl font-semibold text-slate-950 mb-0.5">
-                      {pillar.title}
-                    </h4>
-                    <p className="font-['Plus_Jakarta_Sans'] text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-                      {pillar.description}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
           </div>
 
-          {/* Right Column: Layered Heritage Visual Architecture */}
-          <div className="lg:col-span-6 relative flex items-center justify-center pt-8 lg:pt-0">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.96 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="relative w-full max-w-md sm:max-w-lg"
-            >
-              
-              {/* Main Heritage Palace Image with Arch Cutout Top-Left */}
-              <div className="relative w-full aspect-[4/5] rounded-3xl rounded-tl-[80px] overflow-hidden shadow-2xl border-4 border-white bg-slate-200 group">
-                <img
-                  src={FOUNDER_DATA.palaceImage}
-                  alt="Royal Couple in Palace Archway"
-                  className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700 ease-out"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
-              </div>
-            </motion.div>
+          <motion.p 
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="font-['Plus_Jakarta_Sans'] text-xs sm:text-[13px] font-bold tracking-[0.2em] text-slate-500 uppercase mb-6"
+          >
+            {FOUNDER_DATA.title}
+          </motion.p>
+
+          {/* Elegant Divider */}
+          <motion.div 
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="w-20 h-[2px] bg-amber-600 mb-10" 
+          />
+
+          {/* Core Quote */}
+          <motion.blockquote 
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.6, delay: 0.35 }}
+            className="font-['Cormorant_Garamond'] text-xl sm:text-2xl md:text-3xl italic font-normal text-slate-900 leading-relaxed mb-8 max-w-3xl px-4"
+          >
+            {FOUNDER_DATA.quote}
+          </motion.blockquote>
+
+          {/* Editorial Philosophy Paragraph */}
+          <motion.p 
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="font-['Plus_Jakarta_Sans'] text-sm sm:text-base text-slate-600 leading-relaxed mb-12 max-w-2xl font-normal"
+          >
+            {FOUNDER_DATA.body}
+          </motion.p>
+
+          {/* Core Pillars (3 Cards horizontally across the bottom) */}
+          <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-6 pt-10 border-t border-slate-200/90 text-left">
+            {CORE_PILLARS.map((pillar, idx) => (
+              <motion.div
+                key={pillar.id}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.5, delay: 0.15 * idx }}
+                onMouseEnter={() => setHoveredPillar(pillar.id)}
+                onMouseLeave={() => setHoveredPillar(null)}
+                className={`p-6 rounded-2xl border transition-all duration-300 ${
+                  hoveredPillar === pillar.id 
+                    ? 'bg-white border-amber-300 shadow-xl -translate-y-1' 
+                    : 'bg-white/80 border-slate-200/80 shadow-xs'
+                }`}
+              >
+                <div className={`w-12 h-12 rounded-full border flex items-center justify-center shrink-0 mb-4 transition-colors ${
+                  hoveredPillar === pillar.id ? 'bg-amber-100 border-amber-400' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  {getIcon(pillar.icon)}
+                </div>
+                <h4 className="font-['Cormorant_Garamond'] text-2xl font-semibold text-slate-950 mb-2">
+                  {pillar.title}
+                </h4>
+                <p className="font-['Plus_Jakarta_Sans'] text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
+                  {pillar.description}
+                </p>
+              </motion.div>
+            ))}
           </div>
 
         </div>
