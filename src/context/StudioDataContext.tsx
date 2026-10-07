@@ -98,7 +98,13 @@ export const StudioDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          // Auto-heal any stale 404 photo URL from old local storage
+          return parsed.map((p: PhotoItem) => {
+            if (p.url && p.url.includes('1579783902614-a3fb3927b675')) {
+              return { ...p, url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1200&auto=format&fit=crop' };
+            }
+            return p;
+          });
         }
       }
     } catch (e) {

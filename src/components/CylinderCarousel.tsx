@@ -146,6 +146,26 @@ const PhotoCardShader = {
   `,
 };
 
+const textureCache = new Map<string, THREE.Texture>();
+let fallbackTexture: THREE.Texture | null = null;
+
+function getFallbackTexture(): THREE.Texture {
+  if (fallbackTexture) return fallbackTexture;
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 96;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, 64, 96);
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(4, 4, 56, 88);
+  }
+  fallbackTexture = new THREE.CanvasTexture(canvas);
+  fallbackTexture.colorSpace = THREE.SRGBColorSpace;
+  return fallbackTexture;
+}
+
 interface CardMeshProps {
   photo: PhotoItem;
   index: number;
@@ -159,6 +179,7 @@ interface CardMeshProps {
   setHoveredId: (id: string | null) => void;
   onHoverPhoto?: (photo: PhotoItem | null) => void;
   onSelectPhoto?: (photo: PhotoItem) => void;
+  justDraggedRef: React.MutableRefObject<boolean>;
 }
 
 const CardMesh: React.FC<CardMeshProps> = ({
@@ -174,6 +195,7 @@ const CardMesh: React.FC<CardMeshProps> = ({
   setHoveredId,
   onHoverPhoto,
   onSelectPhoto,
+  justDraggedRef,
 }) => {
   const meshRef = useRef<Mesh>(null!);
   const shadowMeshRef = useRef<Mesh>(null!);
@@ -181,24 +203,32 @@ const CardMesh: React.FC<CardMeshProps> = ({
   const hoverFactor = useRef(0);
   const currentScale = useRef(1.0);
 
-  // Load texture cleanly
+  // Load and cache texture cleanly
   useEffect(() => {
     let isMounted = true;
+    if (textureCache.has(photo.url)) {
+      setTexture(textureCache.get(photo.url)!);
+      return;
+    }
+
     const loader = new TextureLoader();
     loader.load(
       photo.url,
       (tex) => {
+        tex.generateMipmaps = true;
+        tex.minFilter = THREE.LinearMipmapLinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.colorSpace = THREE.SRGBColorSpace;
+        textureCache.set(photo.url, tex);
         if (isMounted) {
-          tex.generateMipmaps = true;
-          tex.minFilter = THREE.LinearMipmapLinearFilter;
-          tex.magFilter = THREE.LinearFilter;
-          tex.colorSpace = THREE.SRGBColorSpace;
           setTexture(tex);
         }
       },
       undefined,
-      (err) => {
-        console.warn(`Failed to load texture for ${photo.title}:`, err);
+      () => {
+        if (isMounted) {
+          setTexture(getFallbackTexture());
+        }
       }
     );
     return () => {
@@ -242,7 +272,6 @@ const CardMesh: React.FC<CardMeshProps> = ({
     const cosAngle = Math.cos(currentAngle);
 
     // FRONT ARC MASKING: Cards visible across screen width
-    // Smoothly fade cards as they go around to the back
     const frontArcFactor = THREE.MathUtils.smoothstep(cosAngle, -0.3, 0.25);
 
     // Target Hover factor
@@ -261,7 +290,7 @@ const CardMesh: React.FC<CardMeshProps> = ({
     // Card Rotation around Y to face inward towards camera line of sight
     const rotY = -currentAngle;
 
-    // 3D Roll-up entry effect: Cards start -3.2 units below and tilt up smoothly
+    // 3D Roll-up entry effect
     const rollYOffset = (1.0 - easedEntry) * -3.2;
     const rollPitch = (1.0 - easedEntry) * -0.5;
 
@@ -276,15 +305,12 @@ const CardMesh: React.FC<CardMeshProps> = ({
       shadowMeshRef.current.scale.set(cardWidth * 1.1 * currentScale.current, cardHeight * 0.4 * currentScale.current, 1);
     }
 
-    // Pure 100% full brightness so images are crisp, clear and un-darkened
     const depthBrightness = 1.05;
-
-    // Opacity with smooth entry & front arc fade
     const targetOpacity = frontArcFactor * easedEntry;
 
     // Update shader uniforms
     if (material) {
-      material.uniforms.uTexture.value = texture;
+      material.uniforms.uTexture.value = texture || getFallbackTexture();
       material.uniforms.uHover.value = hoverFactor.current;
       material.uniforms.uBrightness.value = depthBrightness;
       material.uniforms.uOpacity.value = targetOpacity;
@@ -320,6 +346,7 @@ const CardMesh: React.FC<CardMeshProps> = ({
         }}
         onClick={(e) => {
           e.stopPropagation();
+          if (justDraggedRef.current) return;
           onSelectPhoto?.(photo);
         }}
       >
@@ -329,7 +356,7 @@ const CardMesh: React.FC<CardMeshProps> = ({
   );
 };
 
-// Scene Controller managing Camera, Concave Arc Rotation, Timed Entry, Dragging
+// Scene Controller managing Camera, Concave Arc Rotation, Timed Entry, Smooth Dragging
 const CylinderScene: React.FC<CylinderCarouselProps> = ({
   photos,
   scrollProgress,
@@ -351,7 +378,7 @@ const CylinderScene: React.FC<CylinderCarouselProps> = ({
   const rotationRef = useRef(0);
   const velocity = useRef(0);
   const isDragging = useRef(false);
-  const lastPointerX = useRef(0);
+  const justDraggedRef = useRef(false);
 
   // Dense array of photos for seamless continuous panoramic ring
   const densePhotos = useMemo(() => {
@@ -365,31 +392,29 @@ const CylinderScene: React.FC<CylinderCarouselProps> = ({
   const isTablet = viewport.width >= 6.2 && viewport.width < 10.5;
 
   // Responsive geometry & camera config
-  // Enlarge laptop view significantly for rich high-impact presence while preserving mobile gaps
   const config = useMemo(() => {
     if (isMobile) {
-      // Mobile: sized so adjacent cards have a clean, airy gap and fit mobile screen
+      // Mobile: Cards are larger, closer, and visible around the subject
       return {
-        radius: 6.2,
-        cardWidth: 1.05,
-        cardHeight: 1.54,
-        camZ: 8.6,
-        camY: 0.35,
-        groupY: 0.22,
+        radius: 5.8,
+        cardWidth: 1.18,
+        cardHeight: 1.72,
+        camZ: 7.9,
+        camY: 0.30,
+        groupY: 0.18,
       };
     }
     if (isTablet) {
       return {
-        radius: 7.4,
-        cardWidth: 1.38,
-        cardHeight: 2.02,
-        camZ: 8.3,
-        camY: 0.38,
-        groupY: 0.28,
+        radius: 7.2,
+        cardWidth: 1.40,
+        cardHeight: 2.05,
+        camZ: 8.2,
+        camY: 0.36,
+        groupY: 0.26,
       };
     }
-    // Laptop / Desktop: Substantially INCREASED size!
-    // Bigger 1.68 x 2.44 cards with radius 8.5 and camera closer (Z=7.9) for grand presence
+    // Laptop / Desktop:
     return {
       radius: 8.5,
       cardWidth: 1.68,
@@ -400,49 +425,152 @@ const CylinderScene: React.FC<CylinderCarouselProps> = ({
     };
   }, [isMobile, isTablet]);
 
-  // Pointer Drag event listeners
+  // Touch and Pointer Drag event listeners
   useEffect(() => {
-    const handlePointerDown = (e: PointerEvent) => {
+    let startX = 0;
+    let startY = 0;
+    let lastX = 0;
+    let lastTime = 0;
+    let isHorizontalGesture = false;
+    let totalMoved = 0;
+
+    const onStart = (clientX: number, clientY: number) => {
       isDragging.current = true;
-      lastPointerX.current = e.clientX;
+      startX = clientX;
+      startY = clientY;
+      lastX = clientX;
+      lastTime = performance.now();
+      totalMoved = 0;
+      isHorizontalGesture = false;
       velocity.current = 0;
     };
 
-    const handlePointerMove = (e: PointerEvent) => {
+    const onMove = (clientX: number, clientY: number, cancelable: boolean, preventDefault?: () => void) => {
       if (!isDragging.current) return;
-      const deltaX = e.clientX - lastPointerX.current;
-      lastPointerX.current = e.clientX;
+      const dx = clientX - lastX;
+      const dy = clientY - startY;
+      const totalDx = clientX - startX;
+      totalMoved += Math.abs(dx);
 
-      const sensitivity = 0.0022;
-      const angleDelta = deltaX * sensitivity;
+      if (!isHorizontalGesture && (Math.abs(totalDx) > 7 || Math.abs(dy) > 7)) {
+        if (Math.abs(totalDx) > Math.abs(dy) * 0.75) {
+          isHorizontalGesture = true;
+        } else {
+          // Vertical swipe: let the page scroll naturally
+          isDragging.current = false;
+          return;
+        }
+      }
 
-      rotationRef.current += angleDelta;
-      velocity.current = angleDelta;
+      if (isHorizontalGesture) {
+        if (cancelable && preventDefault) {
+          preventDefault();
+        }
+
+        const sensitivity = isMobile ? 0.0044 : 0.0024;
+        const angleDelta = dx * sensitivity;
+        rotationRef.current += angleDelta;
+
+        const now = performance.now();
+        const dt = Math.max(10, now - lastTime);
+        const instantV = (angleDelta / dt) * 16.666;
+        velocity.current = velocity.current * 0.3 + instantV * 0.7;
+
+        lastX = clientX;
+        lastTime = now;
+      }
+    };
+
+    const onEnd = () => {
+      if (!isDragging.current && !isHorizontalGesture) return;
+      isDragging.current = false;
+
+      if (totalMoved > 10 || isHorizontalGesture) {
+        justDraggedRef.current = true;
+        setTimeout(() => {
+          justDraggedRef.current = false;
+        }, 250);
+      }
+
+      // Clamp max release velocity for natural flick momentum
+      velocity.current = Math.max(-0.06, Math.min(0.06, velocity.current));
+      isHorizontalGesture = false;
+    };
+
+    // Pointer events for desktop mouse / pen
+    const handlePointerDown = (e: PointerEvent) => {
+      const target = e.target as HTMLElement;
+      if (target?.closest('button') || target?.closest('a') || target?.closest('nav')) return;
+      onStart(e.clientX, e.clientY);
+    };
+
+    const handlePointerMove = (e: PointerEvent) => {
+      onMove(e.clientX, e.clientY, e.cancelable, () => e.preventDefault());
     };
 
     const handlePointerUp = () => {
-      isDragging.current = false;
+      onEnd();
+    };
+
+    // Touch events for mobile devices
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const target = e.target as HTMLElement;
+        if (target?.closest('button') || target?.closest('a') || target?.closest('nav')) return;
+        onStart(touch.clientX, touch.clientY);
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        onMove(touch.clientX, touch.clientY, e.cancelable, () => {
+          if (e.cancelable) e.preventDefault();
+        });
+      }
+    };
+
+    const handleTouchEnd = () => {
+      onEnd();
     };
 
     window.addEventListener('pointerdown', handlePointerDown);
-    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointermove', handlePointerMove, { passive: false });
     window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerUp);
+
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd);
+    window.addEventListener('touchcancel', handleTouchEnd);
 
     return () => {
       window.removeEventListener('pointerdown', handlePointerDown);
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
+
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('touchcancel', handleTouchEnd);
     };
+  }, [isMobile]);
+
+  // Fast auto-entry failsafe: starts roll-in after 150ms so background photos appear immediately
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      entryStarted.current = true;
+    }, 150);
+    return () => clearTimeout(timer);
   }, []);
 
   useFrame((_, delta) => {
-    // Animate Carousel Roll-In Entry when triggerEntry is true
-    if (triggerEntry && !entryFinished.current) {
-      if (!entryStarted.current) {
-        entryStarted.current = true;
-      }
-      // Smooth roll-in duration
-      entryProgressRef.current += delta / 1.8;
+    // Fast, crisp roll-in entry (reaches full height in ~0.8s instead of 1.8s)
+    if ((triggerEntry || entryStarted.current) && !entryFinished.current) {
+      entryStarted.current = true;
+      entryProgressRef.current += delta / 0.8;
       if (entryProgressRef.current >= 1.0) {
         entryProgressRef.current = 1.0;
         entryFinished.current = true;
@@ -450,19 +578,23 @@ const CylinderScene: React.FC<CylinderCarouselProps> = ({
       }
     }
 
-    // Continuous endless auto rotation (1 full revolution every 45 seconds)
-    const baseAutoSpeed = (Math.PI * 2) / 45;
+    // Clamp delta to prevent sudden jump during frame drops or tab unfocus
+    const dt = Math.min(delta, 0.04);
 
-    if (isDragging.current) {
-      // Dragging active
-    } else {
-      // Inertia decay for drag momentum
-      velocity.current *= 0.92;
+    // Continuous ambient drift (1 full revolution every 35s - lively, energetic & smooth)
+    const baseAutoSpeed = (Math.PI * 2) / 35;
+
+    if (!isDragging.current) {
+      // Natural momentum inertia decay after swipe/flick
+      velocity.current *= 0.95;
+      if (Math.abs(velocity.current) < 0.00005) {
+        velocity.current = 0;
+      }
       // Always rotate endlessly frame by frame
-      rotationRef.current += delta * baseAutoSpeed + velocity.current;
+      rotationRef.current += dt * baseAutoSpeed + velocity.current;
     }
 
-    // Camera Z & position tailored for laptop vs mobile
+    // Camera positioning tailored for laptop vs mobile
     camera.position.set(0, config.camY, config.camZ);
     camera.lookAt(0, -0.2, -6.0);
   });
@@ -488,6 +620,7 @@ const CylinderScene: React.FC<CylinderCarouselProps> = ({
           setHoveredId={setHoveredId}
           onHoverPhoto={onHoverPhoto}
           onSelectPhoto={onSelectPhoto}
+          justDraggedRef={justDraggedRef}
         />
       ))}
     </group>
@@ -503,7 +636,7 @@ export const CylinderCarousel: React.FC<CylinderCarouselProps> = ({
   onSelectPhoto,
 }) => {
   return (
-    <div className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing select-none pointer-events-auto z-10">
+    <div className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing select-none pointer-events-auto z-10 touch-pan-y">
       <Canvas
         camera={{ position: [0, 0.4, 8.5], fov: 42 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}

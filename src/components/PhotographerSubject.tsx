@@ -12,11 +12,11 @@ export const PhotographerSubject: React.FC<PhotographerSubjectProps> = ({
   const [hasEntered, setHasEntered] = useState(false);
 
   useEffect(() => {
-    // 1.0s delay + 2.8s rising animation = 3.8s total completion
+    // Trigger cylindrical carousel roll-in right away after 250ms
     const timer = setTimeout(() => {
       setHasEntered(true);
       onEntryComplete?.();
-    }, 3800);
+    }, 250);
 
     return () => clearTimeout(timer);
   }, [onEntryComplete]);
@@ -45,9 +45,9 @@ export const PhotographerSubject: React.FC<PhotographerSubjectProps> = ({
           scale: 1,
         }}
         transition={{
-          delay: 0.6,
-          duration: 2.4,
-          ease: [0.12, 1, 0.13, 1],
+          delay: 0.15,
+          duration: 1.2,
+          ease: [0.16, 1, 0.3, 1],
         }}
       >
         <div className="relative flex items-end justify-center">

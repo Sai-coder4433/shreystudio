@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "shrey-studio-6a2d1"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

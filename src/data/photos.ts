@@ -62,7 +62,7 @@ export const HERO_PHOTOS: PhotoItem[] = [
     title: 'Botanical Elegance',
     category: 'Fine Art Still',
     year: '2026',
-    url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=1200&auto=format&fit=crop',
+    url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1200&auto=format&fit=crop',
   },
   {
     id: 'photo-10',

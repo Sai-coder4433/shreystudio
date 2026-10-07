@@ -20,7 +20,12 @@ export const StudioNavbar: React.FC<StudioNavbarProps> = ({
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 40);
+      const y = window.scrollY;
+      setIsScrolled((prev) => {
+        if (!prev && y > 45) return true;
+        if (prev && y < 15) return false;
+        return prev;
+      });
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
@@ -56,22 +61,22 @@ export const StudioNavbar: React.FC<StudioNavbarProps> = ({
   return (
     <>
       <header
-        className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 pointer-events-auto ${
+        className={`fixed top-0 inset-x-0 z-50 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 pointer-events-auto ${
           isScrolled
-            ? 'bg-white/95 backdrop-blur-md border-b border-slate-200/80 py-2.5 sm:py-3 shadow-xs'
-            : 'bg-transparent py-4 sm:py-5'
-        }`}
+            ? 'bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs'
+            : 'bg-white/60 backdrop-blur-sm border-b border-slate-200/30'
+        } py-2.5 sm:py-3`}
       >
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 md:px-10 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-10 flex items-center justify-between">
           {/* Official Brand Logo */}
           <div
-            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group select-none"
+            className="flex items-center h-11 sm:h-13 md:h-14 shrink-0 cursor-pointer select-none"
             onClick={() => handleLinkClick('top', '/')}
           >
             <img
               src="https://i.postimg.cc/FHbyBsDQ/logo-black-(1).png"
               alt="Professional Photography and Cinematography Studio Logo"
-              className="h-8 sm:h-10 w-auto object-contain transition-transform group-hover:scale-102"
+              className="h-11 sm:h-12 md:h-14 w-auto max-w-[210px] sm:max-w-[250px] md:max-w-[290px] object-contain transform-gpu backface-hidden [transform:translateZ(0)] transition-opacity duration-200 hover:opacity-85"
               loading="eager"
             />
           </div>
@@ -151,7 +156,7 @@ export const StudioNavbar: React.FC<StudioNavbarProps> = ({
               <img
                 src="https://i.postimg.cc/FHbyBsDQ/logo-black-(1).png"
                 alt="Professional Photography and Cinematography Studio Logo"
-                className="h-8 w-auto object-contain"
+                className="h-12 sm:h-14 w-auto max-w-[230px] object-contain transform-gpu backface-hidden"
               />
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 Chakan, Pune

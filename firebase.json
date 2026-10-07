@@ -43,5 +43,10 @@
         ]
       }
     ]
+  },
+  "auth": {
+    "providers": {
+      "emailPassword": true
+    }
   }
 }
