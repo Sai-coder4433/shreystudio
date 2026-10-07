@@ -163,6 +163,29 @@ export const FEATURED_STORIES: StoryItem[] = [
       'Private Online Archival Gallery',
     ],
   },
+  {
+    id: 'story-5',
+    number: 'STORY 05',
+    title: 'Ananya & Vikram',
+    season: 'Winter 2026',
+    location: 'HERITAGE MANDAP, PUNE',
+    quote: '“A Timeless Maharashtrian Legacy”',
+    description:
+      'A soulful Maharashtrian wedding celebration steeped in royal Peshwa elegance, gentle shehnai melodies, and emotional generational blessings captured with quiet dignity.',
+    image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1200&auto=format&fit=crop',
+    gallery: [
+      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=900&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=900&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1520854221256-17451cc331bf?q=80&w=900&auto=format&fit=crop',
+    ],
+    category: 'Royal Heritage Wedding',
+    deliverables: [
+      'Full Multi-Day Heritage Coverage',
+      'Handcrafted Gold-Foiled Master Album',
+      '4K Cinematic Wedding Film',
+      'Fine-Art Archival Prints',
+    ],
+  },
 ];
 
 export const SHOOT_PROCESS_STEPS: ShootProcessStep[] = [

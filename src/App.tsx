@@ -259,15 +259,15 @@ function PortfolioContent() {
             {/* 1. Studio Manifesto & Exact Key Stats */}
             <StudioManifestoSection onBookClick={handleOpenBooking} />
 
-            {/* 2. The Architect of Moments (Shreyash Gore, Founder Quote & 3 Pillars) */}
-            <ArchitectFounderSection />
-
-            {/* 3. Featured Wedding Stories */}
+            {/* 2. Featured Wedding Stories (5 Stacking Cards) */}
             <StoriesSection
               stories={stories}
               onBookClick={handleOpenBooking}
               onSelectStory={handleSelectStory}
             />
+
+            {/* 3. The Architect of Moments (Shreyash Gore, Founder Quote & 3 Pillars) */}
+            <ArchitectFounderSection />
 
             {/* 4. Couple Reviews & Testimonials */}
             <CoupleReviewsSection />

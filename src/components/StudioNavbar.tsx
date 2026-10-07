@@ -90,16 +90,16 @@ export const StudioNavbar: React.FC<StudioNavbarProps> = ({
               Manifesto
             </button>
             <button
-              onClick={() => handleLinkClick('architect', '/')}
-              className="hover:text-black cursor-pointer transition-colors duration-200"
-            >
-              The Architect
-            </button>
-            <button
               onClick={() => handleLinkClick('stories', '/')}
               className="hover:text-black cursor-pointer transition-colors duration-200"
             >
               Stories
+            </button>
+            <button
+              onClick={() => handleLinkClick('architect', '/')}
+              className="hover:text-black cursor-pointer transition-colors duration-200"
+            >
+              The Architect
             </button>
             <button
               onClick={() => handleLinkClick('reviews', '/')}
@@ -171,16 +171,16 @@ export const StudioNavbar: React.FC<StudioNavbarProps> = ({
                 Manifesto
               </button>
               <button
-                onClick={() => handleLinkClick('architect', '/')}
-                className="text-left py-2 border-b border-slate-100 hover:text-amber-700 transition-colors cursor-pointer"
-              >
-                The Architect
-              </button>
-              <button
                 onClick={() => handleLinkClick('stories', '/')}
                 className="text-left py-2 border-b border-slate-100 hover:text-amber-700 transition-colors cursor-pointer"
               >
                 Stories
+              </button>
+              <button
+                onClick={() => handleLinkClick('architect', '/')}
+                className="text-left py-2 border-b border-slate-100 hover:text-amber-700 transition-colors cursor-pointer"
+              >
+                The Architect
               </button>
               <button
                 onClick={() => handleLinkClick('reviews', '/')}
