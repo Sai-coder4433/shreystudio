@@ -3,7 +3,6 @@ import { Camera, ScrollText, ShieldCheck, Award } from 'lucide-react';
 import { motion, Variants } from 'motion/react';
 import { FOUNDER_DATA, CORE_PILLARS } from '../data/shreyStudioData';
 import { AnimatedHeadline } from './AnimatedHeadline';
-import { CounterNumber } from './CounterNumber';
 
 export const ArchitectFounderSection: React.FC = () => {
   const [hoveredPillar, setHoveredPillar] = useState<string | null>(null);
@@ -152,49 +151,6 @@ export const ArchitectFounderSection: React.FC = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
               </div>
-
-              {/* Overlapping Bride Cutout Card (Bottom-Left) */}
-              <motion.div 
-                initial={{ opacity: 0, x: -15, y: 15 }}
-                whileInView={{ opacity: 1, x: 0, y: 0 }}
-                viewport={{ once: true, amount: 0.3 }}
-                transition={{ duration: 0.7, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                className="absolute -bottom-4 sm:-bottom-8 sm:-left-6 left-2 w-32 xs:w-40 sm:w-52 md:w-56 aspect-[4/5] rounded-2xl rounded-bl-[32px] sm:rounded-bl-[40px] overflow-hidden shadow-2xl border-2 sm:border-4 border-white z-20 group cursor-pointer"
-              >
-                <img
-                  src={FOUNDER_DATA.brideImage}
-                  alt="Royal Indian Bride with Traditional Jewellery"
-                  className="w-full h-full object-cover object-top group-hover:scale-108 transition-transform duration-700"
-                />
-              </motion.div>
-
-              {/* Floating Stat Card (Bottom-Right) */}
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.3 }}
-                transition={{ duration: 0.7, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                whileHover={{ y: -3, transition: { duration: 0.2 } }}
-                className="absolute -bottom-3 sm:-bottom-6 sm:-right-4 right-2 z-30 bg-white/95 backdrop-blur-md p-3.5 sm:p-5 md:p-6 rounded-2xl border border-slate-200 shadow-xl max-w-[170px] xs:max-w-[200px] sm:max-w-[260px]"
-              >
-                <div className="flex items-baseline mb-0.5 sm:mb-1">
-                  <CounterNumber
-                    value={10}
-                    suffix="+"
-                    duration={1800}
-                    className="font-['Cormorant_Garamond'] text-2xl sm:text-3xl md:text-4xl font-medium text-amber-700"
-                    suffixClassName="text-amber-700 font-serif text-lg sm:text-xl ml-0.5"
-                  />
-                </div>
-                <h4 className="font-['Plus_Jakarta_Sans'] text-[10px] sm:text-[11px] font-bold tracking-[0.16em] sm:tracking-[0.18em] text-slate-800 uppercase mb-1 sm:mb-2">
-                  {FOUNDER_DATA.experienceBadge.title}
-                </h4>
-                <div className="w-6 sm:w-8 h-[2px] bg-amber-600 mb-1.5 sm:mb-2" />
-                <p className="font-['Plus_Jakarta_Sans'] text-[11px] sm:text-xs text-slate-500 leading-snug line-clamp-2 sm:line-clamp-none">
-                  {FOUNDER_DATA.experienceBadge.description}
-                </p>
-              </motion.div>
-
             </motion.div>
           </div>
 
