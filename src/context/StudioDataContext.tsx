@@ -20,9 +20,9 @@ interface StudioDataContextType {
   heroPhotos: PhotoItem[];
   stories: StoryItem[];
   reviews: StudioTestimonialItem[];
-  addHeroPhoto: (photo: Omit<PhotoItem, 'id'> & { id?: string }) => void;
-  updateHeroPhoto: (id: string, updated: Partial<PhotoItem>) => void;
-  deleteHeroPhoto: (id: string) => void;
+  addHeroPhoto: (photo: Omit<PhotoItem, 'id'> & { id?: string }) => Promise<boolean>;
+  updateHeroPhoto: (id: string, updated: Partial<PhotoItem>) => Promise<boolean>;
+  deleteHeroPhoto: (id: string) => Promise<boolean>;
   resetHeroPhotos: () => void;
   addStory: (story: Omit<StoryItem, 'id'> & { id?: string }) => void;
   updateStory: (id: string, updated: Partial<StoryItem>) => void;
@@ -98,10 +98,18 @@ export const StudioDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Auto-heal any stale 404 photo URL from old local storage
+          // Auto-heal any stale 404 photo URL or legacy heavy base64 strings from old local storage
           return parsed.map((p: PhotoItem) => {
             if (p.url && p.url.includes('1579783902614-a3fb3927b675')) {
               return { ...p, url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1200&auto=format&fit=crop' };
+            }
+            if (p.url && p.url.startsWith('data:image/')) {
+              if (p.title === 'Wadekar') {
+                return { ...p, url: 'https://firebasestorage.googleapis.com/v0/b/shrey-studio-6a2d1.firebasestorage.app/o/hero_photos%2Fphoto-1791565778525-goiyk_7iupp.jpg?alt=media&token=a70a14f4-cd44-47d0-a5ae-07a946cc549a' };
+              }
+              if (p.id === 'photo-1') {
+                return { ...p, url: 'https://firebasestorage.googleapis.com/v0/b/shrey-studio-6a2d1.firebasestorage.app/o/hero_photos%2Fphoto-1_j5n3f.jpg?alt=media&token=36ba5897-4ad7-4fce-a167-fd7c78589648' };
+              }
             }
             return p;
           });
@@ -146,7 +154,7 @@ export const StudioDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   });
 
   // Sync to Firestore cloud in background
-  const syncHeroPhotosToCloud = async (items: PhotoItem[]) => {
+  const syncHeroPhotosToCloud = async (items: PhotoItem[]): Promise<boolean> => {
     setIsSyncing(true);
     const ok = await saveHeroPhotosToCloud(items);
     if (ok) {
@@ -154,6 +162,7 @@ export const StudioDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setLastSyncTime(new Date());
     }
     setIsSyncing(false);
+    return ok;
   };
 
   const syncStoriesToCloud = async (items: StoryItem[]) => {
@@ -277,7 +286,7 @@ export const StudioDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, []);
 
   // Hero Photos Actions
-  const addHeroPhoto = (photo: Omit<PhotoItem, 'id'> & { id?: string }) => {
+  const addHeroPhoto = async (photo: Omit<PhotoItem, 'id'> & { id?: string }): Promise<boolean> => {
     const newId = photo.id || `photo-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const newPhotoItem: PhotoItem = {
       ...photo,
@@ -285,19 +294,19 @@ export const StudioDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
     const updated = [newPhotoItem, ...heroPhotos];
     setHeroPhotos(updated);
-    syncHeroPhotosToCloud(updated);
+    return await syncHeroPhotosToCloud(updated);
   };
 
-  const updateHeroPhoto = (id: string, updatedFields: Partial<PhotoItem>) => {
+  const updateHeroPhoto = async (id: string, updatedFields: Partial<PhotoItem>): Promise<boolean> => {
     const updated = heroPhotos.map((p) => (p.id === id ? { ...p, ...updatedFields } : p));
     setHeroPhotos(updated);
-    syncHeroPhotosToCloud(updated);
+    return await syncHeroPhotosToCloud(updated);
   };
 
-  const deleteHeroPhoto = (id: string) => {
+  const deleteHeroPhoto = async (id: string): Promise<boolean> => {
     const updated = heroPhotos.filter((p) => p.id !== id);
     setHeroPhotos(updated);
-    syncHeroPhotosToCloud(updated);
+    return await syncHeroPhotosToCloud(updated);
   };
 
   const resetHeroPhotos = () => {

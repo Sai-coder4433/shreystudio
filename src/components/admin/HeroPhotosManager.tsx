@@ -59,6 +59,7 @@ export const HeroPhotosManager: React.FC = () => {
   const [formCategory, setFormCategory] = useState(POPULAR_CATEGORIES[0]);
   const [formYear, setFormYear] = useState(new Date().getFullYear().toString());
   const [formUrl, setFormUrl] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const openAddModal = () => {
     setFormTitle('');
@@ -78,7 +79,7 @@ export const HeroPhotosManager: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formTitle.trim()) {
       alert('Please enter a photo title.');
@@ -89,24 +90,31 @@ export const HeroPhotosManager: React.FC = () => {
       return;
     }
 
-    if (editingPhoto) {
-      updateHeroPhoto(editingPhoto.id, {
-        title: formTitle.trim(),
-        category: formCategory.trim(),
-        year: formYear.trim() || '2026',
-        url: formUrl.trim(),
-      });
-      showToast(`✓ "${formTitle.trim()}" updated & synced to Cloud!`);
-    } else {
-      addHeroPhoto({
-        title: formTitle.trim(),
-        category: formCategory.trim(),
-        year: formYear.trim() || '2026',
-        url: formUrl.trim(),
-      });
-      showToast(`✓ "${formTitle.trim()}" added to 3D cylinder & Cloud!`);
+    try {
+      setIsSubmitting(true);
+      if (editingPhoto) {
+        await updateHeroPhoto(editingPhoto.id, {
+          title: formTitle.trim(),
+          category: formCategory.trim(),
+          year: formYear.trim() || '2026',
+          url: formUrl.trim(),
+        });
+        showToast(`✓ "${formTitle.trim()}" updated & synced to Cloud!`);
+      } else {
+        await addHeroPhoto({
+          title: formTitle.trim(),
+          category: formCategory.trim(),
+          year: formYear.trim() || '2026',
+          url: formUrl.trim(),
+        });
+        showToast(`✓ "${formTitle.trim()}" added to 3D cylinder & Cloud!`);
+      }
+      setIsModalOpen(false);
+    } catch (err: any) {
+      alert(`Could not save photo: ${err?.message || 'Unknown error'}`);
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsModalOpen(false);
   };
 
   const confirmDeletePhoto = () => {
@@ -357,6 +365,7 @@ export const HeroPhotosManager: React.FC = () => {
                 onChange={setFormUrl}
                 required
                 aspectRatioHint="Portrait 3:4 recommended for 3D rotating cylinder"
+                folder="hero_photos"
               />
 
               {/* Action Buttons */}
@@ -364,16 +373,18 @@ export const HeroPhotosManager: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                  disabled={isSubmitting}
+                  className="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 disabled:opacity-50 text-stone-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-stone-950 hover:bg-stone-800 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  disabled={isSubmitting}
+                  className="px-6 py-2.5 bg-stone-950 hover:bg-stone-800 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   <Check className="w-4 h-4" />
-                  <span>{editingPhoto ? 'Save Changes' : 'Add Photo'}</span>
+                  <span>{isSubmitting ? 'Saving…' : (editingPhoto ? 'Save Changes' : 'Add Photo')}</span>
                 </button>
               </div>
             </form>

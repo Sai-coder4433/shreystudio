@@ -2,6 +2,14 @@
   "projects": {
     "default": "shrey-studio-6a2d1"
   },
-  "targets": {},
+  "targets": {
+    "shrey-studio-6a2d1": {
+      "storage": {
+        "default": [
+          "shrey-studio-6a2d1.firebasestorage.app"
+        ]
+      }
+    }
+  },
   "etags": {}
 }

@@ -418,6 +418,7 @@ export const StoriesManager: React.FC = () => {
                 onChange={setCoverImage}
                 required
                 aspectRatioHint="Recommended: 16:10 landscape or 1200×750 high resolution"
+                folder="stories"
               />
 
               {/* Gallery Photos */}
@@ -439,6 +440,7 @@ export const StoriesManager: React.FC = () => {
                     }
                   }}
                   aspectRatioHint="Each image adds to the wedding gallery"
+                  folder="stories"
                 />
 
                 {gallery.length > 0 && (

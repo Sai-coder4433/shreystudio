@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { Upload, Link as LinkIcon, X, Check, Image as ImageIcon } from 'lucide-react';
-import { compressImageFile } from '../../context/StudioDataContext';
+import { Upload, Link as LinkIcon, X, Check, Image as ImageIcon, Cloud, AlertCircle } from 'lucide-react';
+import { uploadImageToCloud } from '../../firebase/storageService';
 
 interface ImageUploadFieldProps {
   label: string;
@@ -8,6 +8,7 @@ interface ImageUploadFieldProps {
   onChange: (url: string) => void;
   required?: boolean;
   aspectRatioHint?: string;
+  folder?: string;
 }
 
 export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
@@ -16,10 +17,13 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
   onChange,
   required = false,
   aspectRatioHint = 'Recommended: 1200x800 or 3:2 portrait/landscape',
+  folder = 'hero_photos',
 }) => {
   const [inputMode, setInputMode] = useState<'url' | 'file'>('file');
   const [urlInput, setUrlInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -28,27 +32,39 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
       alert('Please select a valid image file (JPEG, PNG, WEBP).');
       return;
     }
+
     try {
       setIsProcessing(true);
-      const compressedDataUrl = await compressImageFile(file, 1400, 0.82);
-      onChange(compressedDataUrl);
-    } catch (err) {
-      console.error('Failed to compress image:', err);
-      alert('Could not process image file. Please try another image.');
+      setErrorMessage(null);
+      setUploadProgress(1);
+
+      // Upload directly to Firebase Cloud Storage with progress updates
+      const downloadUrl = await uploadImageToCloud(file, folder, (percent) => {
+        setUploadProgress(percent);
+      });
+
+      onChange(downloadUrl);
+    } catch (err: any) {
+      console.error('Failed to upload image to Firebase Storage:', err);
+      setErrorMessage(err?.message || 'Upload failed. Please check your internet connection and try again.');
     } finally {
       setIsProcessing(false);
+      setUploadProgress(null);
     }
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) handleFile(file);
+    // Reset file input so selecting the same file triggers change
+    if (e.target) e.target.value = '';
   };
 
   const handleApplyUrl = () => {
     if (urlInput.trim()) {
       onChange(urlInput.trim());
       setUrlInput('');
+      setErrorMessage(null);
     }
   };
 
@@ -70,7 +86,7 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
           <button
             type="button"
             onClick={() => setInputMode('file')}
-            className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
+            className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors flex items-center gap-1.5 cursor-pointer ${
               inputMode === 'file'
                 ? 'bg-white text-stone-900 font-bold shadow-xs border border-stone-200'
                 : 'text-stone-500 hover:text-stone-700'
@@ -82,7 +98,7 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
           <button
             type="button"
             onClick={() => setInputMode('url')}
-            className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
+            className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors flex items-center gap-1.5 cursor-pointer ${
               inputMode === 'url'
                 ? 'bg-white text-stone-900 font-bold shadow-xs border border-stone-200'
                 : 'text-stone-500 hover:text-stone-700'
@@ -100,9 +116,11 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
           onDragLeave={() => setIsDragging(false)}
           onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => !isProcessing && fileInputRef.current?.click()}
           className={`relative border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all duration-200 ${
-            isDragging
+            isProcessing
+              ? 'border-amber-400 bg-amber-50/50 cursor-wait'
+              : isDragging
               ? 'border-amber-500 bg-amber-50'
               : 'border-stone-300 bg-stone-50 hover:border-stone-400 hover:bg-white'
           }`}
@@ -110,14 +128,30 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             className="hidden"
+            disabled={isProcessing}
             onChange={handleFileInputChange}
           />
           {isProcessing ? (
-            <div className="flex flex-col items-center py-2">
-              <div className="w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mb-2" />
-              <p className="text-xs text-stone-500 font-medium">Compressing & optimizing…</p>
+            <div className="flex flex-col items-center py-2 space-y-2">
+              <div className="w-6 h-6 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" />
+              <div>
+                <p className="text-xs font-bold text-stone-800">
+                  Uploading to Firebase Cloud Storage…
+                </p>
+                <p className="text-[11px] text-amber-700 font-medium mt-0.5">
+                  {uploadProgress !== null ? `${uploadProgress}% uploaded` : 'Optimizing resolution…'}
+                </p>
+              </div>
+              {uploadProgress !== null && (
+                <div className="w-48 bg-stone-200 h-1.5 rounded-full overflow-hidden mt-1">
+                  <div
+                    className="bg-amber-600 h-full transition-all duration-200"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2">
@@ -126,9 +160,12 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
               </div>
               <div>
                 <p className="text-xs font-semibold text-stone-700">
-                  Click to browse or drag & drop
+                  Click to browse from computer or drag & drop
                 </p>
                 <p className="text-[11px] text-stone-400 mt-0.5">{aspectRatioHint}</p>
+                <p className="text-[10px] text-emerald-600 font-medium mt-1">
+                  ✓ Uploads directly to Firebase Storage CDN
+                </p>
               </div>
             </div>
           )}
@@ -154,6 +191,14 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
         </div>
       )}
 
+      {/* Error message if upload failed */}
+      {errorMessage && (
+        <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
       {/* Preview */}
       {value ? (
         <div className="mt-2 rounded-xl overflow-hidden border border-stone-200 bg-white p-2.5 flex items-center gap-3">
@@ -172,16 +217,22 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
             <div className="flex items-center gap-1.5 text-emerald-600 text-xs font-semibold">
               <Check className="w-3.5 h-3.5" />
               <span>Image Ready</span>
+              {value.includes('firebasestorage.googleapis.com') && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                  <Cloud className="w-2.5 h-2.5" />
+                  Firebase Storage
+                </span>
+              )}
             </div>
-            <p className="text-[11px] text-stone-400 truncate mt-0.5">
-              {value.startsWith('data:') ? '📁 Local file (compressed)' : value}
+            <p className="text-[11px] text-stone-400 truncate mt-0.5" title={value}>
+              {value}
             </p>
           </div>
           <button
             type="button"
             onClick={() => onChange('')}
             title="Remove image"
-            className="p-1.5 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+            className="p-1.5 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
