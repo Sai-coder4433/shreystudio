@@ -82,7 +82,7 @@ const PhotoCardShader = {
     uHover: { value: 0.0 },
     uBrightness: { value: 1.0 },
     uOpacity: { value: 1.0 },
-    uBorderWidth: { value: 0.018 },
+    uBorderWidth: { value: 0.014 },
     uCornerRadius: { value: 0.055 },
   },
   vertexShader: `
@@ -120,23 +120,23 @@ const PhotoCardShader = {
       
       // Cut out outside corners smoothly (anti-aliased)
       float cornerAlpha = 1.0 - smoothstep(-0.002, 0.003, dist);
-      if (cornerAlpha < 0.02) discard;
+      if (cornerAlpha < 0.01) discard;
 
-      // Calculate thin border
-      float innerDist = dist + uBorderWidth;
-      float isBorder = 1.0 - smoothstep(-0.003, 0.003, innerDist);
-
-      // Sample texture
+      // Sample original HD texture with 100% pure photographic color fidelity
       vec4 texColor = texture2D(uTexture, uv);
       
-      // Pure, vivid, un-darkened texture brightness
-      vec3 finalTex = texColor.rgb * uBrightness;
+      // Pure, vivid, true-to-life HD photo color (no gray/white film)
+      vec3 finalColor = texColor.rgb;
 
-      // Add subtle hover highlight
-      finalTex += vec3(0.08) * uHover;
+      // Subtle hover highlight (clean brightness boost on hover)
+      if (uHover > 0.001) {
+        finalColor = mix(finalColor, finalColor * 1.06 + vec3(0.015), uHover);
+      }
 
-      // Mix texture with crisp clean subtle border
-      vec3 finalColor = mix(finalTex, vec3(0.08, 0.08, 0.12), isBorder * 0.3);
+      // Crisp subtle border at outer edge
+      float innerDist = dist + uBorderWidth;
+      float isBorder = 1.0 - smoothstep(-0.002, 0.002, innerDist);
+      finalColor = mix(finalColor, vec3(0.12, 0.12, 0.15), isBorder * 0.10);
 
       float finalAlpha = cornerAlpha * uOpacity;
       if (finalAlpha < 0.01) discard;
@@ -203,7 +203,7 @@ const CardMesh: React.FC<CardMeshProps> = ({
   const hoverFactor = useRef(0);
   const currentScale = useRef(1.0);
 
-  // Load and cache texture cleanly
+  // Load and cache texture cleanly with CORS resiliency
   useEffect(() => {
     let isMounted = true;
     if (textureCache.has(photo.url)) {
@@ -212,25 +212,69 @@ const CardMesh: React.FC<CardMeshProps> = ({
     }
 
     const loader = new TextureLoader();
-    loader.load(
-      photo.url,
-      (tex) => {
-        tex.generateMipmaps = true;
-        tex.minFilter = THREE.LinearMipmapLinearFilter;
-        tex.magFilter = THREE.LinearFilter;
-        tex.colorSpace = THREE.SRGBColorSpace;
-        textureCache.set(photo.url, tex);
-        if (isMounted) {
-          setTexture(tex);
+    loader.setCrossOrigin('anonymous');
+
+    const applyTextureSettings = (tex: THREE.Texture) => {
+      tex.generateMipmaps = true;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 16;
+      tex.needsUpdate = true;
+    };
+
+    const loadTexture = (targetUrl: string, isRetry = false) => {
+      loader.load(
+        targetUrl,
+        (tex) => {
+          applyTextureSettings(tex);
+          textureCache.set(photo.url, tex);
+          if (isMounted) {
+            setTexture(tex);
+          }
+        },
+        undefined,
+        () => {
+          // If first attempt failed, retry with cache-bust to clear any stale pre-CORS browser cache
+          if (!isRetry && !targetUrl.startsWith('data:')) {
+            const separator = targetUrl.includes('?') ? '&' : '?';
+            const cacheBustUrl = `${targetUrl}${separator}t=${Date.now()}`;
+            loadTexture(cacheBustUrl, true);
+            return;
+          }
+
+          // Fallback: fetch blob directly as object URL
+          if (isRetry && !targetUrl.startsWith('data:')) {
+            fetch(photo.url, { mode: 'cors' })
+              .then((res) => {
+                if (!res.ok) throw new Error('Fetch failed');
+                return res.blob();
+              })
+              .then((blob) => {
+                const objectUrl = URL.createObjectURL(blob);
+                loader.load(objectUrl, (tex) => {
+                  applyTextureSettings(tex);
+                  textureCache.set(photo.url, tex);
+                  if (isMounted) setTexture(tex);
+                });
+              })
+              .catch(() => {
+                if (isMounted) {
+                  setTexture(getFallbackTexture());
+                }
+              });
+            return;
+          }
+
+          if (isMounted) {
+            setTexture(getFallbackTexture());
+          }
         }
-      },
-      undefined,
-      () => {
-        if (isMounted) {
-          setTexture(getFallbackTexture());
-        }
-      }
-    );
+      );
+    };
+
+    loadTexture(photo.url);
+
     return () => {
       isMounted = false;
     };
@@ -244,6 +288,7 @@ const CardMesh: React.FC<CardMeshProps> = ({
       fragmentShader: PhotoCardShader.fragmentShader,
       transparent: true,
       side: DoubleSide,
+      toneMapped: false, // Prevents ACESFilmic tone-mapping from hazing / desaturating photos
     });
     return mat;
   }, []);
@@ -271,8 +316,9 @@ const CardMesh: React.FC<CardMeshProps> = ({
     // Cosine of angle relative to camera front (+Z)
     const cosAngle = Math.cos(currentAngle);
 
-    // FRONT ARC MASKING: Cards visible across screen width
-    const frontArcFactor = THREE.MathUtils.smoothstep(cosAngle, -0.3, 0.25);
+    // FRONT ARC MASKING: All cards in the visible front hemisphere are 100% SOLID and OPAQUE!
+    // No white background bleed-through, no milky/hazy veil!
+    const frontArcFactor = THREE.MathUtils.smoothstep(cosAngle, -0.65, -0.20);
 
     // Target Hover factor
     const targetHover = isHovered && frontArcFactor > 0.4 ? 1.0 : 0.0;
@@ -305,8 +351,8 @@ const CardMesh: React.FC<CardMeshProps> = ({
       shadowMeshRef.current.scale.set(cardWidth * 1.1 * currentScale.current, cardHeight * 0.4 * currentScale.current, 1);
     }
 
-    const depthBrightness = 1.05;
-    const targetOpacity = frontArcFactor * easedEntry;
+    const depthBrightness = 1.0;
+    const targetOpacity = Math.min(1.0, frontArcFactor * easedEntry);
 
     // Update shader uniforms
     if (material) {
@@ -639,7 +685,12 @@ export const CylinderCarousel: React.FC<CylinderCarouselProps> = ({
     <div className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing select-none pointer-events-auto z-10 touch-pan-y">
       <Canvas
         camera={{ position: [0, 0.4, 8.5], fov: 42 }}
-        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+        gl={{
+          antialias: true,
+          alpha: true,
+          powerPreference: 'high-performance',
+          toneMapping: THREE.NoToneMapping,
+        }}
         dpr={[1, 2]}
       >
         <ambientLight intensity={2.0} />

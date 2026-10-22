@@ -7,8 +7,8 @@ import { storage } from './firebaseConfig';
  */
 export function compressImageToBlob(
   file: File,
-  maxWidth = 1600,
-  quality = 0.85
+  maxWidth = 2200,
+  quality = 0.92
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
     // If not an image, resolve with original file
@@ -40,6 +40,9 @@ export function compressImageToBlob(
           return;
         }
 
+        // High quality bicubic resampling for sharp HD output
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, width, height);
         canvas.toBlob(
           (blob) => {
