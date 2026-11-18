@@ -120,3 +120,32 @@ export async function uploadImageToCloud(
     throw err;
   }
 }
+
+/**
+ * Uploads multiple image files to Firebase Cloud Storage in sequence with overall progress tracking.
+ */
+export async function uploadMultipleImagesToCloud(
+  files: File[],
+  folder = 'stories',
+  onOverallProgress?: (completedCount: number, totalCount: number, overallPercent: number) => void
+): Promise<string[]> {
+  const urls: string[] = [];
+  const total = files.length;
+  if (total === 0) return urls;
+
+  for (let i = 0; i < total; i++) {
+    const file = files[i];
+    const url = await uploadImageToCloud(file, folder, (filePercent) => {
+      if (onOverallProgress) {
+        const overall = Math.round(((i + filePercent / 100) / total) * 100);
+        onOverallProgress(i, total, overall);
+      }
+    });
+    urls.push(url);
+    if (onOverallProgress) {
+      onOverallProgress(i + 1, total, Math.round(((i + 1) / total) * 100));
+    }
+  }
+
+  return urls;
+}

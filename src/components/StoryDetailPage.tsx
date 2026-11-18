@@ -66,13 +66,15 @@ export const StoryDetailPage: React.FC<StoryDetailPageProps> = ({
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  // Curate a rich plate gallery combining main image + gallery items + architectural details
-  const allPlates = [
-    story.image,
-    ...story.gallery,
-    'https://images.unsplash.com/photo-1544077960-604201fe74bc?q=80&w=900&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=900&auto=format&fit=crop',
-  ].slice(0, 6);
+  // Curate all plates: story cover image + gallery photos without artificial limits
+  const uniqueStoryPlates = Array.from(new Set([story.image, ...(story.gallery || [])])).filter(Boolean);
+  const allPlates = uniqueStoryPlates.length >= 2
+    ? uniqueStoryPlates
+    : [
+        ...uniqueStoryPlates,
+        'https://images.unsplash.com/photo-1544077960-604201fe74bc?q=80&w=900&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=900&auto=format&fit=crop',
+      ];
 
   return (
     <div className="relative w-full min-h-screen bg-[#faf8f5] text-slate-900 selection:bg-black selection:text-white">
